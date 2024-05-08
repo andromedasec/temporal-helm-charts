@@ -11,6 +11,11 @@ metadata:
     app.kubernetes.io/instance: {{ $.Release.Name }}
     app.kubernetes.io/version: {{ $.Chart.AppVersion | replace "+" "_" }}
     app.kubernetes.io/part-of: {{ $.Chart.Name }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-10"
 data:
   config_template.yaml: |-
     log:
@@ -20,7 +25,7 @@ data:
     persistence:
       defaultStore: {{ $.Values.server.config.persistence.defaultStore }}
     {{- if or $.Values.elasticsearch.enabled $.Values.elasticsearch.external }}
-      visibilityStore: es-visibility
+      advancedVisibilityStore: es-visibility
     {{- else }}
       visibilityStore: visibility
     {{- end }}
@@ -39,9 +44,11 @@ data:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-          {{- with $.Values.server.config.persistence.default.faultInjection}}
+          {{- if $.Values.server.config.persistence.faultinjection}}
+          {{- if $.Values.server.config.persistence.faultinjection.rate }}
           faultInjection:
-              {{- toYaml . | nindent 12 }}
+            rate: {{ $.Values.server.config.persistence.faultinjection.rate }}
+          {{- end }}
           {{- end }}
           {{- if eq (include "temporal.persistence.driver" (list $ "default")) "sql" }}
           sql:
@@ -57,6 +64,15 @@ data:
             {{- end }}
           {{- end }}
         visibility:
+          {{- if eq (include "temporal.persistence.driver" (list $ "visibility")) "cassandra" }}
+          cassandra:
+            hosts: "{{ include "temporal.persistence.cassandra.hosts" (list $ "visibility") }}"
+            port: {{ include "temporal.persistence.cassandra.port" (list $ "visibility") }}
+            password: "{{ `{{ .Env.TEMPORAL_VISIBILITY_STORE_PASSWORD }}` }}"
+            {{- with (omit $.Values.server.config.persistence.visibility.cassandra "hosts" "port" "password" "existingSecret") }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
           {{- if eq (include "temporal.persistence.driver" (list $ "default")) "sql" }}
           sql:
             pluginName: "{{ include "temporal.persistence.sql.driver" (list $ "visibility") }}"
@@ -110,13 +126,6 @@ data:
           timerType: histogram
           listenAddress: "0.0.0.0:9090"
         {{- end }}
-
-      {{- if $.Values.server.config.tls }}
-      tls:
-        {{- with $.Values.server.config.tls }}
-        {{- toYaml . | nindent 10 }}
-        {{- end }}
-      {{- end }}
 
     services:
       frontend:

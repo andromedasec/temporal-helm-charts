@@ -47,6 +47,16 @@ metadata:
   labels:
     {{- include "temporal.resourceLabels" (list $ $service "") | nindent 4 }}
     app.kubernetes.io/headless: 'true'
+    {{- if (default $.Values.server.metrics.annotations.enabled $serviceValues.metrics.annotations.enabled) }}
+    prometheus.io/job: {{ $.Chart.Name }}-{{ $service }}
+    prometheus.io/scrape: 'true'
+    prometheus.io/scheme: http
+    prometheus.io/port: "9090"
+    {{- end }}
+    {{- with (default $.Values.server.podAnnotations $serviceValues.podAnnotations) }}
+    {{- toYaml . | nindent 8 }}
+    {{- end }}
+
   annotations:
     # Use this annotation in addition to the actual field below because the
     # annotation will stop being respected soon but the field is broken in

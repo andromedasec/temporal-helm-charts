@@ -28,7 +28,7 @@ server:
     # Annotate pods directly with Prometheus annotations.
     # Use this if you installed Prometheus from a Helm chart.
     annotations:
-      enabled: true
+      enabled: false
     # Additional tags to be added to Prometheus metrics
     tags: {}
     # Tags to be excluded in Prometheus metrics
@@ -229,7 +229,7 @@ server:
       #      - chart-example.local
     metrics:
       annotations:
-        enabled: true
+        enabled: false
       serviceMonitor: {}
       # enabled: false
       prometheus: {}
@@ -282,7 +282,7 @@ server:
       membershipPort: 6934
     metrics:
       annotations:
-        enabled: true
+        enabled: false
       serviceMonitor: {}
       # enabled: false
       prometheus: {}
@@ -331,7 +331,7 @@ server:
       membershipPort: 6939
     metrics:
       annotations:
-        enabled: true
+        enabled: false
       serviceMonitor: {}
       # enabled: false
       prometheus: {}
